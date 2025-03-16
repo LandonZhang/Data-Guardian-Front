@@ -1,9 +1,18 @@
 <template>
   <div class="app">
-    <h1>你好! Data Guardian</h1>
+    <test/>
   </div>
 </template>
 
-<script lang="ts"></script>
+<script lang="ts">
+import test from './views/test_view.vue'
+
+export default {
+  name: 'App',
+  components: {
+    test
+  }
+}
+</script>
 
 <style></style>
