@@ -27,5 +27,7 @@ app.use(ElementPlus)
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
+// 使用路由器
+app.use(router)
 
 app.mount('#app')
