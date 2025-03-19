@@ -125,16 +125,16 @@
         </div>
 
         <div class="filter-buttons">
-          <el-button type="primary">搜索</el-button>
-          <el-button>重置</el-button>
+          <el-button type="primary" @click="filterTableData">搜索</el-button>
+          <el-button @click="resetFilters">重置</el-button>
         </div>
       </div>
 
       <div class="table-container">
-        <el-button type="primary" class="import-button">导入</el-button>
+        <el-button type="primary" class="import-button" @click="openUploadFileDialog">导入</el-button>
         <div class="page-container">
-        <el-table :data="tableData">
-            <el-table-column label="序号" type="index" width="80" />
+        <el-table :data="paginatedData">
+            <el-table-column label="序号" type="index" :index="indexMethod" width="80" />
             <el-table-column label="表格名称" prop="name" />
             <el-table-column label="特征名称" prop="feature" />
             <el-table-column label="所属项目" prop="project" />
@@ -142,28 +142,41 @@
 
             <el-table-column label="操作" width="200">
             <template #default="scope">
-                <el-button size="small" type="success">查看</el-button>
-                <el-button size="small" type="warning">编辑</el-button>
-                <el-button size="small" type="danger">删除</el-button>
+                <el-button size="small" type="success" @click="checkDialogInParent">查看</el-button>
+                <el-button size="small" type="warning" @click="openDialogInParent">编辑</el-button>
+                <el-button size="small" type="danger" @click="openDeleteDialog">删除</el-button>
             </template>
             </el-table-column>
         </el-table>
         </div>
       </div>
 
-      <el-pagination background layout="prev, pager, next" :total="50" class="pagination" />
+      <el-pagination
+        background
+        layout="prev, pager, next"
+        :total="tableData.length"
+        :page-size="pageSize"
+        v-model:current-page="currentPage"
+        class="pagination"
+      />
     </el-main>
     </el-container>
+
+    <!-- 弹窗 -->
+    <FormEditDialog ref="editDialogRef"/>
+    <FormDialog ref="viewDialogRef"/>
+    <DeleteDialog ref="deleteDialog"/>
+    <UploadFileDialog ref="uploadFileDialogRef"/>
   </template>
 
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 
 // 选中值
 const projectValue = ref<string[]>([]);
 const tableValue = ref<string[]>([]);
 const featureValue = ref<string[]>([]);
-    const dateValue = ref<[Date, Date] | null>(null);
+const dateValue = ref<[Date, Date] | null>(null);
 
 // 全选状态
 const projectCheckAll = ref(false);
@@ -252,44 +265,155 @@ watch(featureValue, (val) => {
   featureIndeterminate.value = val.length > 0 && val.length < featureOptions.value.length;
 });
 
-const tableData = [
-  {
-    name: '养护任务计划表',
-    feature: '任务编码',
-    project: '大连路隧道',
-    date: '2025-01-16 16:29'
-  }
-];
+/* 表格 */
+const tableData = ref([
+  { name: '养护任务计划表', feature: '任务编码', project: '大连路隧道', date: '2025-01-16 16:29' },
+  { name: '施工进度表', feature: '项目负责人', project: '南京西路工程', date: '2025-02-10 10:15' },
+  { name: '设备检修记录', feature: '验收状态', project: '外滩修复项目', date: '2025-03-05 14:22' },
+  { name: '施工任务单', feature: '项目负责人', project: '大连路隧道', date: '2025-01-22 09:30' },
+  { name: '安全检查表', feature: '任务编码', project: '南京西路工程', date: '2025-03-01 08:45' },
+  { name: '设备维护表', feature: '验收状态', project: '外滩修复项目', date: '2025-02-15 11:10' },
+  { name: '施工质量报告', feature: '任务编码', project: '大连路隧道', date: '2025-01-12 13:55' },
+  { name: '工程验收单', feature: '项目负责人', project: '南京西路工程', date: '2025-03-08 12:40' },
+  { name: '劳务派遣表', feature: '任务编码', project: '外滩修复项目', date: '2025-02-20 17:05' },
+  { name: '设备采购单', feature: '验收状态', project: '大连路隧道', date: '2025-01-29 15:20' },
+  { name: '施工进度表', feature: '项目负责人', project: '南京西路工程', date: '2025-03-11 09:35' },
+  { name: '质量检测报告', feature: '验收状态', project: '外滩修复项目', date: '2025-02-25 10:50' },
+  { name: '维修记录表', feature: '任务编码', project: '大连路隧道', date: '2025-01-18 14:10' },
+  { name: '项目支出清单', feature: '项目负责人', project: '南京西路工程', date: '2025-03-02 16:25' },
+  { name: '材料使用记录', feature: '验收状态', project: '外滩修复项目', date: '2025-02-07 08:20' },
+  { name: '施工方案', feature: '任务编码', project: '大连路隧道', date: '2025-01-31 19:00' },
+  { name: '巡检记录表', feature: '项目负责人', project: '南京西路工程', date: '2025-03-06 07:55' },
+  { name: '工程变更单', feature: '验收状态', project: '外滩修复项目', date: '2025-02-13 18:30' },
+  { name: '项目进度报表', feature: '任务编码', project: '大连路隧道', date: '2025-01-25 21:45' },
+  { name: '设备租赁单', feature: '项目负责人', project: '南京西路工程', date: '2025-03-14 11:20' }
+]);
+
+const indexMethod = (index: number) => {
+  return (currentPage.value - 1) * pageSize.value + index + 1;
+};
+
+
+/* 搜索与重置 */
+const filteredTableData = ref([...tableData.value]);
+
+const filterTableData = () => {
+  filteredTableData.value = tableData.value.filter(item => {
+    // 找到选中的项目名称
+    const selectedProjects = projectValue.value.map(
+      val => projectOptions.value.find(o => o.value === val)?.label
+    );
+    const matchesProject =
+      projectValue.value.length === 0 || selectedProjects.includes(item.project);
+
+    // 找到选中的表格名称
+    const selectedTables = tableValue.value.map(
+      val => tableOptions.value.find(o => o.value === val)?.label
+    );
+    const matchesTable =
+      tableValue.value.length === 0 || selectedTables.includes(item.name);
+
+    // 找到选中的特征名称
+    const selectedFeatures = featureValue.value.map(
+      val => featureOptions.value.find(o => o.value === val)?.label
+    );
+    const matchesFeature =
+      featureValue.value.length === 0 || selectedFeatures.includes(item.feature);
+    
+    const matchesDate = !dateValue.value || (
+      new Date(item.date) >= new Date(dateValue.value[0]) &&
+      new Date(item.date) <= new Date(dateValue.value[1])
+    );
+
+    return matchesProject && matchesTable && matchesFeature && matchesDate;
+  });
+
+  currentPage.value = 1;
+};
+
+// 重置功能
+const resetFilters = () => {
+  projectValue.value = [];
+  tableValue.value = [];
+  featureValue.value = [];
+  dateValue.value = null;
+  
+  filteredTableData.value = [...tableData.value];
+  currentPage.value = 1;
+};
+
+// 计算当前页的数据
+const paginatedData = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  return filteredTableData.value.slice(start, end);
+});
+
+/* 翻页器 */
+const currentPage = ref(1); // 当前页码
+const pageSize = ref(12); // 每页显示数量
+
+/* 弹窗 */
+import FormEditDialog from "@/components/Edit_Dialog.vue";
+import FormDialog from "@/components/View_Dialog.vue";
+import DeleteDialog from "@/components/Delete_Dialog.vue";
+import UploadFileDialog from "@/components/Upload_Dialog.vue";
+
+//引用子组件实例
+const editDialogRef = ref<InstanceType<typeof FormEditDialog> | null>(null);
+const viewDialogRef = ref<InstanceType<typeof FormDialog> | null>(null);
+const deleteDialog = ref<InstanceType<typeof DeleteDialog> | null>(null);
+const uploadFileDialogRef = ref<InstanceType<typeof UploadFileDialog> | null>(null);
+
+// 打开编辑弹窗
+function openDialogInParent() {
+  editDialogRef.value?.openDialog();
+}
+
+// 打开查看弹窗
+function checkDialogInParent() {
+  viewDialogRef.value?.openDialog();
+}
+
+// 打开删除弹窗
+function openDeleteDialog() {
+  deleteDialog.value?.openDialog();
+}
+
+// 打开上传文件弹窗
+function openUploadFileDialog() {
+  uploadFileDialogRef.value?.openDialog();
+}
 </script>
 
 <style scoped>
-  /* 顶部样式 */
-  .header-container {
-    background-color: #E1ECF9;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 40px;
-    height: 107px;
+/* 顶部样式 */
+.header-container {
+  background-color: #E1ECF9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px 40px;
+  height: 107px;
   }
 
-  /* 顶部左右两个组件 */
-  .header-left,
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+/* 顶部左右两个组件 */
+.header-left,
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
-  .header-text {
-    font-size: 18px;
-    color: #2F435D;
-  }
+.header-text {
+  font-size: 18px;
+  color: #2F435D;
+}
 
-  .header-icon {
-    font-size: 28px;
-    color: #2F435D;
-  }
+.header-icon {
+  font-size: 28px;
+  color: #2F435D;
+}
 
 /* 筛选区域 */
 .filter-container {
@@ -341,6 +465,7 @@ const tableData = [
   padding: 15px;
   border-radius: 10px;
   margin-top: 15px;
+  height: 583px;
 }
 
 /* 导入按钮 */
