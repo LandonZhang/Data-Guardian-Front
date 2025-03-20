@@ -23,13 +23,15 @@
       :show-file-list="true"
     >
       <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-      <div class="el-upload__text">
-        点击上传文档，<em>或将文件拖拽至此</em>
-      </div>
+      <div class="el-upload__text">点击上传文档，<em>或将文件拖拽至此</em></div>
     </el-upload>
 
     <!-- 错误详情表格 -->
-    <el-table v-if="errorDetails.length > 0" :data="errorDetails" style="width: 100%; margin-top: 10px;">
+    <el-table
+      v-if="errorDetails.length > 0"
+      :data="errorDetails"
+      style="width: 100%; margin-top: 10px"
+    >
       <el-table-column prop="row" label="错误行号" width="100"></el-table-column>
       <el-table-column prop="error" label="错误信息"></el-table-column>
     </el-table>
@@ -43,49 +45,49 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineExpose } from "vue";
-import { UploadFilled } from "@element-plus/icons-vue";
-import axios from "axios";
-import { ElMessage, ElNotification } from "element-plus";
+import { ref, defineExpose } from 'vue'
+import { UploadFilled } from '@element-plus/icons-vue'
+import axios from 'axios'
+import { ElMessage, ElNotification } from 'element-plus'
 
 interface UploadResponse {
-  status: string;
-  message: string;
-  total_records: number;
-  success_count: number;
-  error_count: number;
-  error_details?: { row: number; error: string }[];
+  status: string
+  message: string
+  total_records: number
+  success_count: number
+  error_count: number
+  error_details?: { row: number; error: string }[]
 }
 
-const visible = ref(false);
-const uploadUrl = "http://127.0.0.1:8080/rule/upload/";
+const visible = ref(false)
+const uploadUrl = 'http://127.0.0.1:8080/rule/upload/'
 // 传递给上传组件的请求头
-const uploadHeaders = { Authorization: "Bearer your_token" };
-const errorDetails = ref<{ row: number; error: string }[]>([]);
+const uploadHeaders = { Authorization: 'Bearer your_token' }
+const errorDetails = ref<{ row: number; error: string }[]>([])
 
 // 测试模式：开发测试时开启，生产时请关闭
-const testMode = true;
+const testMode = false
 
-const openDialog = () => (visible.value = true);
-const closeDialog = () => (visible.value = false);
-defineExpose({ openDialog });
+const openDialog = () => (visible.value = true)
+const closeDialog = () => (visible.value = false)
+defineExpose({ openDialog })
 
 const downloadTemplate = async () => {
   try {
-    const response = await axios.get("http://127.0.0.1:8080/rule/template/download", {
-      responseType: "blob",
-    });
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "规则文件模板.xlsx");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const response = await axios.get('http://127.0.0.1:8080/rule/upload', {
+      responseType: 'blob',
+    })
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', '规则文件模板.xlsx')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   } catch {
-    ElMessage.error("模板下载失败，请稍后再试！");
+    ElMessage.error('模板下载失败，请稍后再试！')
   }
-};
+}
 
 /**
  * 文件上传前的校验
@@ -94,70 +96,70 @@ const downloadTemplate = async () => {
  */
 const beforeUpload = (file: File): boolean => {
   const allowedTypes = [
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "application/vnd.ms-excel",
-    "text/csv",
-  ];
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel',
+    'text/csv',
+  ]
   if (!allowedTypes.includes(file.type)) {
-    ElMessage.error("仅支持 CSV 和 Excel (.xls, .xlsx) 文件上传！");
-    return false;
+    ElMessage.error('仅支持 CSV 和 Excel (.xls, .xlsx) 文件上传！')
+    return false
   }
   if (file.size > 5 * 1024 * 1024) {
-    ElMessage.error("文件大小不能超过 5MB！");
-    return false;
+    ElMessage.error('文件大小不能超过 5MB！')
+    return false
   }
 
   if (testMode) {
     // 模拟上传，延时后返回成功信息
     setTimeout(() => {
       const simulatedResponse: UploadResponse = {
-        status: "success",
-        message: "成功导入 5 条规则",
+        status: 'success',
+        message: '成功导入 5 条规则',
         total_records: 6,
         success_count: 5,
         error_count: 1,
-        error_details: [{ row: 3, error: "必填字段不能为空" }],
-      };
-      handleSuccess(simulatedResponse);
-    }, 500);
-    return false; // 取消自动上传请求
+        error_details: [{ row: 3, error: '必填字段不能为空' }],
+      }
+      handleSuccess(simulatedResponse)
+    }, 500)
+    return false // 取消自动上传请求
   }
-  return true;
-};
+  return true
+}
 
 /**
  * 上传成功的处理逻辑
  */
 const handleSuccess = (data: UploadResponse) => {
-  if (data.status === "success") {
+  if (data.status === 'success') {
     ElNotification.success({
-      title: "上传成功",
+      title: '上传成功',
       message: `总记录数: ${data.total_records}, 成功: ${data.success_count}, 失败: ${data.error_count}`,
       duration: 5000,
-    });
-    errorDetails.value = data.error_details || [];
+    })
+    errorDetails.value = data.error_details || []
   } else {
-    ElMessage.error(`上传失败: ${data.message}`);
+    ElMessage.error(`上传失败: ${data.message}`)
   }
-};
+}
 
 /**
  * 上传失败的处理逻辑
  */
 const handleError = (error: unknown) => {
   if (axios.isAxiosError(error)) {
-    const status = error.response?.status;
+    const status = error.response?.status
     if (status === 400) {
-      ElMessage.error("上传失败: 文件格式错误或缺少必要列，请检查文件内容！");
+      ElMessage.error('上传失败: 文件格式错误或缺少必要列，请检查文件内容！')
     } else if (status === 500) {
-      ElMessage.error("服务器内部错误，请稍后重试或联系管理员！");
+      ElMessage.error('服务器内部错误，请稍后重试或联系管理员！')
     } else {
-      ElMessage.error(`上传失败: ${error.response?.data?.message || "未知错误"}`);
+      ElMessage.error(`上传失败: ${error.response?.data?.message || '未知错误'}`)
     }
   } else {
-    ElMessage.error("上传失败，请检查网络或联系管理员！");
+    ElMessage.error('上传失败，请检查网络或联系管理员！')
   }
-};
+}
 </script>
 
 <style scoped>
