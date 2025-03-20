@@ -29,11 +29,17 @@
 
 <script setup lang="ts">
 import { ref, defineExpose } from "vue";
+import axios from "axios";
+import { ElMessage } from "element-plus";
 
 const visible = ref(false);
+const ruleId = ref<number | null>(null);
+const onDeleteSuccess = ref<(() => void) | null>(null);
 
-// 打开弹窗
-const openDialog = () => {
+// 打开弹窗，并接收要删除的规则 ID 和回调函数
+const openDialog = (id: number, callback: () => void) => {
+  ruleId.value = id;
+  onDeleteSuccess.value = callback;
   visible.value = true;
 };
 
@@ -43,9 +49,27 @@ const closeDialog = () => {
 };
 
 // 点击“删除”时的操作
-const handleDelete = () => {
-  console.log("已删除规则");
-  visible.value = false;
+const handleDelete = async () => {
+  if (ruleId.value === null) return;
+
+  try {
+    const response = await axios.delete(`http://127.0.0.1:8080/rule/manage/${ruleId.value}`);
+    if (response.data.status === "success") {
+      ElMessage.success(response.data.message);
+
+      // 删除成功后执行回调，更新前端数据
+      onDeleteSuccess.value?.();
+      closeDialog();
+    } else {
+      ElMessage.error("删除失败");
+    }
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      ElMessage.error("规则不存在");
+    } else {
+      ElMessage.error("服务器内部错误");
+    }
+  }
 };
 
 // 让父组件能够调用 openDialog() 来打开弹窗

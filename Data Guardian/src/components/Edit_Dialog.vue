@@ -39,33 +39,78 @@
 
 <script setup lang="ts">
 import { ref, defineExpose } from "vue";
+import axios from "axios";
 
 const visible = ref(false);
+const ruleId = ref<number | null>(null);
+const tableName = ref("");
+const featureName = ref("");
+const ruleContent = ref("");
 
-// 默认data传入
-const tableName = ref("养护任务计计划表");
-const featureName = ref("任务编码");
-const ruleContent = ref("数据库未进行要求，但养护任务编码要求不能为空");
+// 是否为测试模式
+const isTestMode = ref(false);
 
-// 打开弹窗
-const openDialog = () => {
+// **打开编辑弹窗**
+const openEditDialog = async (id: number) => {
+  ruleId.value = id;
   visible.value = true;
+
+  if (isTestMode.value) {
+    // **测试模式：使用假数据**
+    tableName.value = "测试表格";
+    featureName.value = "测试特征";
+    ruleContent.value = "测试规则内容，可修改";
+    return;
+  }
+
+  try {
+    const response = await axios.get(`http://127.0.0.1:8080/rule/manage/${ruleId}`);
+    const data = response.data;
+
+    tableName.value = data.table_name;
+    featureName.value = data.feature_name;
+    ruleContent.value = data.rule_content;
+  } catch (error) {
+    console.error("获取规则数据失败:", error);
+  }
 };
 
-// 关闭弹窗
+// **保存编辑后的规则**
+const handleSave = async () => {
+  if (isTestMode.value) {
+    console.log("测试模式：模拟提交数据", {
+      rule_content: ruleContent.value,
+    });
+    visible.value = false;
+    return;
+  }
+
+  try {
+    const response = await axios.put(`http://127.0.0.1:8080/rule/manage/${ruleId}`, {
+      rule_content: ruleContent.value, // 只更新规则内容
+    });
+
+    if (response.data.status === "success") {
+      console.log("规则更新成功:", response.data.message);
+      visible.value = false;
+    } else {
+      console.error("规则更新失败:", response.data.message);
+    }
+  } catch (error) {
+    console.error("更新规则数据失败:", error);
+  }
+};
+
+
+// **关闭弹窗**
 const closeDialog = () => {
   visible.value = false;
 };
 
-// 点击“保存”时的操作
-const handleSave = () => {
-  console.log("已保存的规则内容：", ruleContent.value);
-  visible.value = false;
-};
-
-// 让父组件能够调用 openDialog() 来打开弹窗
-defineExpose({ openDialog });
+// 让父组件能够调用 openEditDialog()
+defineExpose({ openEditDialog });
 </script>
+
 
 <style scoped>
 /* 自定义标题部分，不设置背景色，保持白色；增加左侧内边距确保文字对齐 */

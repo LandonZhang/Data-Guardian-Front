@@ -32,14 +32,15 @@
 import { ref, defineExpose } from "vue";
 
 const visible = ref(false);
+const tableName = ref("");
+const featureName = ref("");
+const ruleContent = ref("");
 
-// 默认数据传入
-const tableName = ref("养护任务计计划表");
-const featureName = ref("任务编码");
-const ruleContent = ref("数据库未进行要求，但养护任务编码要求不能为空");
-
-// 打开弹窗
-const openDialog = () => {
+// 打开弹窗并设置数据
+const openDialog = (data: { tableName: string; featureName: string; ruleContent: string }) => {
+  tableName.value = data.tableName;
+  featureName.value = data.featureName;
+  ruleContent.value = data.ruleContent;
   visible.value = true;
 };
 
@@ -48,7 +49,7 @@ const closeDialog = () => {
   visible.value = false;
 };
 
-// 让父组件能够调用 openDialog() 来打开弹窗
+// 让父组件能够调用 openDialog() 传入数据
 defineExpose({ openDialog });
 </script>
 
