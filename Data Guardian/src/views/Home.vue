@@ -10,10 +10,13 @@
         <h5 class="header-text">你好，管理员</h5>
       </div>
     </el-header>
-    
-    <el-main></el-main>
+
   </el-container>
 </template>
+
+<style scoped>
+/* 样式可以根据需要添加 */
+</style>
 
 <style scoped>
   /* 顶部样式 */

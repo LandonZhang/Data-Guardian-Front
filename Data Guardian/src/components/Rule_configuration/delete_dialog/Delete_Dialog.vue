@@ -49,62 +49,67 @@ const closeDialog = () => {
 };
 
 // 点击“删除”时的操作
+
 const handleDelete = async () => {
   if (ruleId.value === null) return;
+
 
   try {
     const response = await axios.delete(`http://127.0.0.1:8080/rule/manage/${ruleId.value}`);
     if (response.data.status === "success") {
       ElMessage.success(response.data.message);
-
-      // 删除成功后执行回调，更新前端数据
       onDeleteSuccess.value?.();
       closeDialog();
     } else {
       ElMessage.error("删除失败");
     }
-  } catch (error: any) {
-    if (error.response?.status === 404) {
-      ElMessage.error("规则不存在");
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 404) {
+        ElMessage.error("规则不存在");
+      } else {
+        ElMessage.error("服务器内部错误");
+      }
     } else {
-      ElMessage.error("服务器内部错误");
+      ElMessage.error("请求失败，请检查网络");
     }
   }
 };
 
-// 让父组件能够调用 openDialog() 来打开弹窗
+
 defineExpose({ openDialog });
 </script>
 
 <style scoped>
-/* 自定义标题部分，不设置背景色，保持白色；增加左侧内边距确保文字对齐 */
+/* 自定义标题部分 */
 .custom-header {
   padding: 10px 10px 0 10px;
-  text-align: left; /* 左对齐标题内容 */
+  text-align: left;
   border-radius: 5px 5px 0 0;
 }
 
 .header-text {
   color: black;
   font-weight: bold;
-  font-size: 20px; /* 调整字体大小，放大标题 */
+  font-size: 18px; /* 调整为18px */
 }
 
-/* 横线样式，颜色设置为黑色，撑满整个弹窗 */
+/* 横线样式，颜色改为浅灰色 */
 .header-divider {
   border: none;
   height: 1px;
-  background-color: black;
+  background-color: #ccc; /* 改为浅灰色 */
   margin: 10px 0 0 0;
   width: 100%;
 }
 
-/* 弹窗主体内容，添加左侧内边距保持文字与标题对齐，并使文字居中 */
+/* 弹窗主体内容 */
 .dialog-body {
   margin-bottom: 20px;
   line-height: 1.8;
   color: black;
-  text-align: center; /* 使内容居中 */
+  text-align: center;
+  font-size: 16px; /* 调整为16px */
 }
 
 .dialog-body p {
@@ -113,12 +118,24 @@ defineExpose({ openDialog });
 
 /* 底部按钮区域的样式 */
 .dialog-footer {
-  display: flex; /* 使用Flexbox布局 */
-  justify-content: center; /* 中心对齐 */
-  gap: 113px; /* 设置按钮之间的间距 */
+  display: flex;
+  justify-content: center;
+  gap: 20px; /* 调整间距为20px */
 }
 
 .dialog-footer .el-button {
-  width: 120px; /* 设定按钮宽度 */
+  width: 120px;
+}
+
+/* 添加hover效果 */
+.dialog-footer .el-button:hover {
+  opacity: 0.8; /* 轻微透明 */
+}
+</style>
+
+<style>
+/* 覆盖Element Plus的el-dialog样式，添加圆角 */
+:deep(.el-dialog) {
+  border-radius: 10px;
 }
 </style>

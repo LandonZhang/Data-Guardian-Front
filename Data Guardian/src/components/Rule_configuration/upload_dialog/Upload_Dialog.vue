@@ -12,7 +12,7 @@
       class="upload-demo"
       drag
       :auto-upload="true"
-      :action="testMode ? '' : uploadUrl"
+      :action="uploadUrl"
       :headers="uploadHeaders"
       :before-upload="beforeUpload"
       :on-success="handleSuccess"
@@ -50,28 +50,27 @@ import { UploadFilled } from '@element-plus/icons-vue'
 import axios from 'axios'
 import { ElMessage, ElNotification } from 'element-plus'
 
+// 定义后端响应数据结构
 interface UploadResponse {
   status: string
   message: string
   total_records: number
   success_count: number
   error_count: number
-  error_details?: { row: number; error: string }[]
+  error_details?: { '行号': number; '错误': string }[]
 }
 
 const visible = ref(false)
 const uploadUrl = 'http://127.0.0.1:8080/rule/upload/'
-// 传递给上传组件的请求头
 const uploadHeaders = { Authorization: 'Bearer your_token' }
 const errorDetails = ref<{ row: number; error: string }[]>([])
 
-// 测试模式：开发测试时开启，生产时请关闭
-const testMode = false
-
+// 打开和关闭对话框的方法
 const openDialog = () => (visible.value = true)
 const closeDialog = () => (visible.value = false)
 defineExpose({ openDialog })
 
+// 下载模板文件
 const downloadTemplate = async () => {
   try {
     const response = await axios.get('http://127.0.0.1:8080/rule/upload', {
@@ -89,11 +88,7 @@ const downloadTemplate = async () => {
   }
 }
 
-/**
- * 文件上传前的校验
- * 如果校验不通过，返回 false 即可阻止上传；
- * 如果处于测试模式下，模拟返回结果后也返回 false，取消自动上传。
- */
+// 上传前校验
 const beforeUpload = (file: File): boolean => {
   const allowedTypes = [
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -108,53 +103,38 @@ const beforeUpload = (file: File): boolean => {
     ElMessage.error('文件大小不能超过 5MB！')
     return false
   }
-
-  if (testMode) {
-    // 模拟上传，延时后返回成功信息
-    setTimeout(() => {
-      const simulatedResponse: UploadResponse = {
-        status: 'success',
-        message: '成功导入 5 条规则',
-        total_records: 6,
-        success_count: 5,
-        error_count: 1,
-        error_details: [{ row: 3, error: '必填字段不能为空' }],
-      }
-      handleSuccess(simulatedResponse)
-    }, 500)
-    return false // 取消自动上传请求
-  }
   return true
 }
 
-/**
- * 上传成功的处理逻辑
- */
-const handleSuccess = (data: UploadResponse) => {
+// 上传成功处理
+const handleSuccess = (data: any) => {
   if (data.status === 'success') {
     ElNotification.success({
       title: '上传成功',
-      message: `总记录数: ${data.total_records}, 成功: ${data.success_count}, 失败: ${data.error_count}`,
+      message: `${data.message}\n总记录数: ${data.total_records}, 成功: ${data.success_count}, 失败: ${data.error_count}`,
       duration: 5000,
     })
-    errorDetails.value = data.error_details || []
+    // 转换后端返回的 error_details 字段名
+    errorDetails.value = (data.error_details || []).map((detail: any) => ({
+      row: detail['行号'],
+      error: detail['错误'],
+    }))
   } else {
-    ElMessage.error(`上传失败: ${data.message}`)
+    ElMessage.error(`上传失败: ${data.message || '未知错误'}`)
   }
 }
 
-/**
- * 上传失败的处理逻辑
- */
+// 上传失败处理
 const handleError = (error: unknown) => {
-  if (axios.isAxiosError(error)) {
-    const status = error.response?.status
+  if (axios.isAxiosError(error) && error.response) {
+    const { status, data } = error.response
+    const message = data?.message || '未知错误'
     if (status === 400) {
-      ElMessage.error('上传失败: 文件格式错误或缺少必要列，请检查文件内容！')
+      ElMessage.error(`上传失败: ${message || '文件格式错误或缺少必要列'}`)
     } else if (status === 500) {
-      ElMessage.error('服务器内部错误，请稍后重试或联系管理员！')
+      ElMessage.error(`服务器内部错误: ${message || '请稍后重试或联系管理员'}`)
     } else {
-      ElMessage.error(`上传失败: ${error.response?.data?.message || '未知错误'}`)
+      ElMessage.error(`上传失败: ${message}`)
     }
   } else {
     ElMessage.error('上传失败，请检查网络或联系管理员！')
