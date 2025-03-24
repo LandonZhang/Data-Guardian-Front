@@ -71,6 +71,7 @@
             </el-table-column>
           </el-table>
         </div>
+      </div>
         <div class="pagination-container" style="text-align: right; margin-top: 20px;">
           <PaginationComponent
             :current-page="currentPage"
@@ -79,7 +80,6 @@
             @pageChange="handlePageChange"
           />
         </div>
-      </div>
     </el-main>
   </el-container>
 
@@ -278,7 +278,7 @@ const openDeleteDialog = (id: number) => {
   padding: 15px;
   border-radius: 10px;
   margin-top: 15px;
-  height: 580px;
+  height: 578px;
 }
 
 /* 导入按钮 */
