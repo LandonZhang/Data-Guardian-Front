@@ -44,6 +44,6 @@ const handlePageChange = (newPage: number) => {
 .pagination {
   display: flex;
   justify-content: flex-end;
-  margin-top: 15px;
+  margin-top: 10px;
 }
 </style>
