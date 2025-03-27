@@ -1,40 +1,49 @@
 <template>
   <div class="chat-window">
     <div class="messages" ref="messagesContainer">
-      <div
-        v-for="(message, index) in messages"
-        :key="index"
-        :class="{'user-message': message.isUser, 'bot-message': !message.isUser, 'audit-message': message.isAudit}"
-        class="message-item"
-      >
-        <template v-if="message.isUser">
-          <el-icon class="message-icon"><UserFilled /></el-icon>
-          <div v-html="formatMessage(message.text)" />
-        </template>
-        <template v-else-if="message.isAudit">
-          <div class="audit-container">
-            <div class="audit-content">
-              <div class="audit-icon">
-                <el-icon><MessageBox /></el-icon>
+      <!-- 添加需求记录已保存标记 - 放在消息框的外部上方 -->
+      <div v-for="(message, index) in messages" :key="index">
+        <div 
+          class="requirement-saved" 
+          v-if="message.hasRequirementSaved && !message.isUser"
+          @click="showRequirementDialog(message)"
+        >
+          <el-icon><CircleCheckFilled /></el-icon>
+          需求记录已保存
+        </div>
+        <div
+          :class="{'user-message': message.isUser, 'bot-message': !message.isUser, 'audit-message': message.isAudit}"
+          class="message-item"
+        >
+          <template v-if="message.isUser">
+            <el-icon class="message-icon"><UserFilled /></el-icon>
+            <div v-html="formatMessage(message.text)" />
+          </template>
+          <template v-else-if="message.isAudit">
+            <div class="audit-container">
+              <div class="audit-content">
+                <div class="audit-icon">
+                  <el-icon><MessageBox /></el-icon>
+                </div>
+                <div class="audit-text">稽核中，请稍后</div>
+                <div class="progress-container">
+                  <div class="progress-bar">
+                    <div class="progress-fill" :style="{ width: message.auditProgress + '%' }"></div>
+                  </div>
+                  <div class="progress-text">
+                    <span class="percentage">{{ message.auditProgress }}%</span>
+                  </div>
+                </div>
               </div>
-              <div class="audit-text">稽核中，请稍后</div>
-              <div class="progress-container">
-                <div class="progress-bar">
-                  <div class="progress-fill" :style="{ width: message.auditProgress + '%' }"></div>
-                </div>
-                <div class="progress-text">
-                  <span class="percentage">{{ message.auditProgress }}%</span>
-                </div>
+              <div class="audit-result" v-if="message.auditProgress >= 100">
+                感谢您的等待，本次稽核已完成，<a href="#" class="audit-link">点击查看稽核报告</a>。如需再次开启稽核，请点击右下角新建对话。
               </div>
             </div>
-            <div class="audit-result" v-if="message.auditProgress >= 100">
-              感谢您的等待，本次稽核已完成，<a href="#" class="audit-link">点击查看稽核报告</a>。如需再次开启稽核，请点击右下角新建对话。
-            </div>
-          </div>
-        </template>
-        <template v-else>
-          <div v-html="formatMessage(message.text)" />
-        </template>
+          </template>
+          <template v-else>
+            <div v-html="formatMessage(message.text)" />
+          </template>
+        </div>
       </div>
     </div>
 
@@ -57,6 +66,13 @@
         </el-button>
       </div>
     </div>
+    
+    <!-- 需求记录弹窗 -->
+    <RequirementDialog
+      v-model:visible="requirementDialogVisible"
+      :conversation-id="props.conversationId"
+      :message-id="currentMessageId"
+    />
   </div>
 </template>
 
@@ -64,14 +80,16 @@
 import { ref, defineProps, watch, nextTick, onMounted } from 'vue';
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
-import { Loading, Position, UserFilled, MessageBox } from '@element-plus/icons-vue';
 import NewChat from "@/components/Quality_Audit/New_chat_button.vue"
+import RequirementDialog from '@/components/Quality_Audit/Requirement_dialog.vue';
 
 interface Message {
   text: string;
   isUser: boolean;
   isAudit?: boolean;
   auditProgress?: number;
+  hasRequirementSaved?: boolean; // 标记是否显示"需求记录已保存"
+  id?: string; // 消息ID，用于后端查询
 }
 
 // Define props to receive selected project from parent
@@ -91,6 +109,11 @@ const messages = ref<Message[]>([]);
 const isInputDisabled = ref(false);
 const hasUserSentMessage = ref(false);
 const messagesContainer = ref<HTMLElement | null>(null);
+const lastModelResponseIndex = ref(-1); // 记录最后一条模型回复的索引
+
+// 需求记录弹窗相关
+const requirementDialogVisible = ref(false);
+const currentMessageId = ref('');
 
 // Function to scroll to the bottom of the messages container
 const scrollToBottom = async () => {
@@ -159,9 +182,13 @@ async function sendMessage() {
 
       // 解析响应数据
       const answer = response.data.answer;
+      const messageId = response.data.id || `msg_${Date.now()}`; // 使用后端返回的ID或生成临时ID
 
       // 显示响应消息（带逐字输出效果）
-      await displayResponseWithTypingEffect(answer);
+      await displayResponseWithTypingEffect(answer, messageId);
+      
+      // 更新最后一条模型回复的索引
+      lastModelResponseIndex.value = messages.value.length - 1;
 
     } catch (error) {
       console.error('与后端通信失败:', error);
@@ -171,7 +198,7 @@ async function sendMessage() {
         answer: "要优化MySQL查询性能，您可以：\n 1. 建立合适的索引 \n 2. 优化查询语句\n 3. 合理设计表结构 \n 4. 使用查询缓存\n 5. 适当分表分库",
         conversation_id: "conv_abc123",
         created_at: 1679123456,
-        id: "msg_123456"
+        id: `msg_${Date.now()}`
       };
 
       // 根据错误类型显示不同的提示
@@ -196,7 +223,10 @@ async function sendMessage() {
       }
 
       // 显示模拟响应（带逐字输出效果）
-      await displayResponseWithTypingEffect(mockResponse.answer);
+      await displayResponseWithTypingEffect(mockResponse.answer, mockResponse.id);
+      
+      // 更新最后一条模型回复的索引
+      lastModelResponseIndex.value = messages.value.length - 1;
     } finally {
       // 无论成功还是失败，最终都重置处理状态
       isProcessing.value = false;
@@ -204,13 +234,17 @@ async function sendMessage() {
   }
 }
 
-function displayResponseWithTypingEffect(text) {
+function displayResponseWithTypingEffect(text, messageId) {
   return new Promise((resolve) => {
     let currentText = '';
     let index = 0;
 
     // 添加空消息用于逐字填充
-    messages.value.push({ text: '', isUser: false });
+    messages.value.push({ 
+      text: '', 
+      isUser: false,
+      id: messageId
+    });
 
     const interval = setInterval(() => {
       if (index < text.length) {
@@ -239,17 +273,40 @@ function startAuditMode() {
 
   messages.value.push(auditMessage);
 
+  // 记录当前消息列表长度，以便在稽核完成后标记正确的消息
+  const auditStartIndex = messages.value.length - 1;
+
   const progressInterval = setInterval(() => {
-    const lastAuditMessage = messages.value.find(m => m.isAudit);
+    const lastAuditMessage = messages.value[auditStartIndex];
+    
     if (lastAuditMessage && lastAuditMessage.auditProgress !== undefined) {
       if (lastAuditMessage.auditProgress < 100) {
         lastAuditMessage.auditProgress += 10;
       } else {
         clearInterval(progressInterval);
         isProcessing.value = false; // 稽核完成后重置处理状态
+        
+        // 在稽核完成时，为最后一条模型回复添加"需求记录已保存"标记
+        if (lastModelResponseIndex.value >= 0) {
+          // 获取最后一条模型回复
+          const lastModelResponse = messages.value[lastModelResponseIndex.value];
+          // 添加需求记录已保存标记
+          if (lastModelResponse && !lastModelResponse.isUser) {
+            lastModelResponse.hasRequirementSaved = true;
+          }
+        }
       }
     }
   }, 500);
+}
+
+// 显示需求记录弹窗
+function showRequirementDialog(message) {
+  // 设置当前消息ID，以便弹窗组件从后端获取详细信息
+  currentMessageId.value = message.id || '';
+  
+  // 显示弹窗
+  requirementDialogVisible.value = true;
 }
 
 // 处理换行操作
@@ -306,6 +363,7 @@ function clearChat() {
   isProcessing.value = false; // 确保处理状态被重置
   hasUserSentMessage.value = false;
   userInput.value = '';
+  lastModelResponseIndex.value = -1; // 重置最后一条模型回复的索引
 }
 </script>
 
@@ -445,5 +503,17 @@ function clearChat() {
 
 .input-field :deep(textarea) {
   resize: none;
+}
+
+.requirement-saved {
+  color: #909399;
+  font-size: 14px;
+  margin-bottom: 10px;
+  font-weight: 500;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
 }
 </style>
