@@ -313,8 +313,13 @@ const openDeleteDialog = (id: number) => {
   background-color: #f2f6fc;
   padding: 15px;
   border-radius: 10px;
+<<<<<<< HEAD
   margin-top: 15px;
   height: 578px;
+=======
+  margin-top: 10px;
+  height: 575px;
+>>>>>>> data-guardian-front/alternate
 }
 
 /* 导入按钮 */

@@ -1,65 +1,143 @@
 <template>
-  <div>
-    <h1>
-      这是质量稽核页面
-    </h1>
+  <el-container>
+    <el-header class="header-container">
+      <div class="header-left">
+        <el-icon class="header-icon"><Location /></el-icon>
+        <h5 class="header-text">主页</h5>
+      </div>
+      <div class="header-right">
+        <el-icon class="header-icon"><User /></el-icon>
+        <h5 class="header-text">你好，管理员</h5>
+      </div>
+    </el-header>
 
-    <!-- 查看按钮 -->
-    <el-button @click="showDialog(1)">查看规则</el-button>
-
-    <!-- 编辑按钮 -->
-    <el-button @click="openEditDialog(1)">编辑规则</el-button>
-
-    <!-- 删除按钮 -->
-    <el-button @click="openDeleteDialog(1)" type="danger">删除规则</el-button>
-
-    <!-- 导入按钮 -->
-    <el-button type="primary" @click="openUploadDialog">导入规则</el-button>
-
-    <!-- 查看弹窗子组件 -->
-    <FormDialog ref="formDialog" />
-
-    <!-- 编辑弹窗子组件 -->
-    <EditDialog ref="editDialog" />
-
-    <!-- 删除弹窗子组件 -->
-    <DeleteDialog ref="deleteDialog" />
-
-    <!-- 导入弹窗子组件 -->
-    <UploadDialog ref="uploadDialog" />
-  </div>
+    <el-main>
+      <div class="select-container">
+        <Select @project-selected="handleProjectSelected" />
+      </div>
+      <div class="chat-container">
+        <div v-if="!chatStarted" class="start-button-container">
+          <el-button type="primary" @click="startChat">开始对话</el-button>
+        </div>
+        <Chat v-else :selected-project="currentProject" :conversation-id="conversationId" />
+      </div>
+    </el-main>
+  </el-container>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import FormDialog from "@/components/Rule_configuration/view_dialog/View_Dialog.vue"
-import DeleteDialog from "@/components/Rule_configuration/delete_dialog/Delete_Dialog.vue"
-import EditDialog from "@/components/Rule_configuration/edit_dialog/Edit_Dialog.vue"
-import UploadDialog from "@/components/Rule_configuration/upload_dialog/Upload_Dialog.vue"
+import { ref } from 'vue';
+import axios from 'axios';
+import { ElMessage } from 'element-plus';
+import Chat from '@/components/Quality_Audit/Chat_window.vue';
+import Select from '@/components/Quality_Audit/Select_project.vue';
 
-// 获取组件的引用
-const formDialog = ref(null)
-const deleteDialog = ref(null)
-const editDialog = ref(null)
-const uploadDialog = ref(null)
+const currentProject = ref('');
+const chatStarted = ref(false);
+const conversationId = ref('');
 
-// 打开查看弹窗并传入规则ID
-const showDialog = (ruleId: number) => {
-  formDialog.value?.openDialog(ruleId)
-}
+// Handle project selection from the Select component
+const handleProjectSelected = (project: string) => {
+  currentProject.value = project;
+};
 
-// 打开编辑弹窗并传入规则ID
-const openEditDialog = (ruleId: number) => {
-  editDialog.value?.openDialog(ruleId)
-}
+// Start chat
+const startChat = async () => {
+  try {
+    // 尝试调用后端接口
+    const newConversationResponse = await axios.post('http://127.0.0.1:8080/llm/chat/new-conversation', {
+      user: 'root'
+    });
 
-// 打开删除弹窗并传入规则ID
-const openDeleteDialog = (ruleId: number) => {
-  deleteDialog.value?.openDialog(ruleId)
-}
+    if (newConversationResponse.data.status === 'success') {
+      // 显示成功消息
+      ElMessage({
+        message: newConversationResponse.data.message,
+        type: 'success',
+        duration: 3000
+      });
 
-// 打开导入弹窗
-const openUploadDialog = () => {
-  uploadDialog.value?.openDialog()
-}
+      // 获取对话ID
+      const getConversationIdResponse = await axios.get('http://127.0.0.1:8080/llm/chat/conversation-id/root');
+
+      // 保存对话ID
+      conversationId.value = getConversationIdResponse.data.conversation_id;
+
+      // 开始对话
+      chatStarted.value = true;
+    }
+  } catch (error) {
+    console.error('后端接口未开放，使用模拟数据:', error);
+
+    // 使用模拟数据
+    ElMessage({
+      message: '使用模拟数据模式：已开始新对话',
+      type: 'info',
+      duration: 3000
+    });
+
+    // 设置模拟的对话ID
+    conversationId.value = 'mock_conversation_' + Date.now();
+
+    // 开始对话
+    chatStarted.value = true;
+  }
+};
 </script>
+
+<style scoped>
+/* 顶部样式 */
+.header-container {
+  background-color: #e1ecf9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px 40px;
+  height: 107px;
+}
+
+/* 顶部左右两个组件 */
+.header-left,
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-text {
+  font-size: 18px;
+  color: #2f435d;
+}
+
+.header-icon {
+  font-size: 28px;
+  color: #2f435d;
+}
+
+/* 下拉框背景 */
+.select-container {
+  position: relative;
+  height: 50px;
+  padding: 15px 15px 15px 30px;
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+/* 聊天窗口背景 */
+.chat-container {
+  height: 655px;
+  padding: 20px 30px;
+  background-color: #f2f6fc;
+  border-radius: 10px;
+  position: relative;
+}
+
+/* 开始对话按钮容器 */
+.start-button-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+</style>
