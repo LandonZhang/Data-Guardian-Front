@@ -7,13 +7,13 @@
           <h5>数据质量稽核工具</h5>
         </div>
 
-        <el-menu background-color="#E1ECF9" default-active="/首页" router class="el-menu-vertical-demo">
-          <el-menu-item index="/首页">
+        <el-menu background-color="#E1ECF9" :default-active="activeIndex" class="el-menu-vertical-demo">
+          <el-menu-item index="/首页" @click="goToHome">
             <el-icon><House /></el-icon>
             <span>主页</span>
           </el-menu-item>
 
-          <el-menu-item index="/规则配置">
+          <el-menu-item index="/规则配置" @click="navigateTo('/规则配置')">
             <el-icon><Setting /></el-icon>
             <span>规则配置</span>
           </el-menu-item>
@@ -23,11 +23,11 @@
               <el-icon><DocumentChecked /></el-icon>
               <span>数据稽核</span>
             </template>
-            <el-menu-item index="/质量稽核">质量稽核</el-menu-item>
-            <el-menu-item index="/稽核结果">稽核结果</el-menu-item>
+            <el-menu-item index="/质量稽核" @click="navigateTo('/质量稽核')">质量稽核</el-menu-item>
+            <el-menu-item index="/稽核结果" @click="navigateTo('/稽核结果')">稽核结果</el-menu-item>
           </el-sub-menu>
 
-          <el-menu-item index="/数据修正">
+          <el-menu-item index="/数据修正" @click="navigateTo('/数据修正')">
             <el-icon><Edit /></el-icon>
             <span>数据修正</span>
           </el-menu-item>
@@ -37,11 +37,11 @@
               <el-icon><Monitor /></el-icon>
               <span>模型管理</span>
             </template>
-            <el-menu-item index="/模型微调">模型微调</el-menu-item>
-            <el-menu-item index="/协助情况概览">协助情况概览</el-menu-item>
+            <el-menu-item index="/模型微调" @click="navigateTo('/模型微调')">模型微调</el-menu-item>
+            <el-menu-item index="/协助情况概览" @click="navigateTo('/协助情况概览')">协助情况概览</el-menu-item>
           </el-sub-menu>
 
-          <el-menu-item index="/项目管理">
+          <el-menu-item index="/项目管理" @click="navigateTo('/项目管理')">
             <el-icon><Notebook /></el-icon>
             <span>项目管理</span>
           </el-menu-item>
@@ -54,13 +54,77 @@
     </el-aside>
 
     <el-container>
-      <router-view></router-view>
+      <router-view v-slot="{ Component }">
+        <component :is="Component" :key="$route.fullPath" />
+      </router-view>
     </el-container>
   </el-container>
 </template>
 
-<script lang="ts">
-import { RouterView } from 'vue-router';
+<script setup lang="ts">
+import { ref, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+
+const route = useRoute();
+const router = useRouter();
+const activeIndex = ref(route.path);
+
+// 专门处理首页导航的函数
+const goToHome = () => {
+  console.log('导航到首页');
+  // 添加时间戳确保每次都是新的导航
+  router.push({
+    path: '/首页',
+    query: { t: Date.now().toString() }
+  });
+};
+
+// 处理其他页面的导航
+const navigateTo = (path) => {
+  console.log('导航到:', path);
+  if (route.path === path) {
+    // 如果是相同路径，添加时间戳查询参数强制重新渲染
+    router.push({
+      path: path,
+      query: { t: Date.now().toString() }
+    });
+  } else {
+    // 不同路径正常导航
+    router.push(path);
+  }
+};
+
+// 监听路由变化更新菜单高亮
+watch(() => route.path, (newPath) => {
+  console.log('路由变化到:', newPath);
+  activeIndex.value = newPath;
+});
+
+// 页面加载时处理菜单高亮和路径恢复
+onMounted(() => {
+  console.log('App组件挂载，当前路由路径:', route.path);
+
+  // 设置当前高亮菜单项
+  if (route.path && route.path !== '/') {
+    activeIndex.value = route.path;
+    // 统一使用localStorage存储路径
+    localStorage.setItem('currentPath', route.path);
+  }
+  // 如果是根路径，则尝试从localStorage恢复
+  else {
+    const savedPath = localStorage.getItem('currentPath');
+    if (savedPath && savedPath !== '/' && savedPath !== '/首页') {
+      // 如果是刷新情况，应该导航到保存的路径
+      activeIndex.value = savedPath;
+      // 简单延迟确保路由已完全初始化
+      setTimeout(() => {
+        router.replace(savedPath);
+      }, 0);
+    } else {
+      activeIndex.value = '/首页';
+    }
+  }
+});
 </script>
 
 <style scoped>
@@ -103,7 +167,7 @@ import { RouterView } from 'vue-router';
 }
 
 /* 一级菜单默认 */
-:deep(.el-menu-item), 
+:deep(.el-menu-item),
 :deep(.el-sub-menu__title) {
   font-size: 18px !important;
   font-weight: bold !important;

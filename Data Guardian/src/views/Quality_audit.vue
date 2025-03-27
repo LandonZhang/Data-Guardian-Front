@@ -11,26 +11,79 @@
       </div>
     </el-header>
 
-
     <el-main>
       <div class="select-container">
-        <Select/>
+        <Select @project-selected="handleProjectSelected" />
       </div>
       <div class="chat-container">
-        <Chat/>
+        <div v-if="!chatStarted" class="start-button-container">
+          <el-button type="primary" @click="startChat">开始对话</el-button>
+        </div>
+        <Chat v-else :selected-project="currentProject" :conversation-id="conversationId" />
       </div>
     </el-main>
   </el-container>
 </template>
 
-
-
 <script setup lang="ts">
-import Chat from '@/components/Quality_audit/Chat_window/Chat_window.vue'
-import Select from '@/components/Quality_audit/Select_project/Select_project.vue'
+import { ref } from 'vue';
+import axios from 'axios';
+import { ElMessage } from 'element-plus';
+import Chat from '@/components/Quality_Audit/Chat_window.vue';
+import Select from '@/components/Quality_Audit/Select_project.vue';
+
+const currentProject = ref('');
+const chatStarted = ref(false);
+const conversationId = ref('');
+
+// Handle project selection from the Select component
+const handleProjectSelected = (project: string) => {
+  currentProject.value = project;
+};
+
+// Start chat
+const startChat = async () => {
+  try {
+    // 尝试调用后端接口
+    const newConversationResponse = await axios.post('http://127.0.0.1:8080/llm/chat/new-conversation', {
+      user: 'root'
+    });
+
+    if (newConversationResponse.data.status === 'success') {
+      // 显示成功消息
+      ElMessage({
+        message: newConversationResponse.data.message,
+        type: 'success',
+        duration: 3000
+      });
+
+      // 获取对话ID
+      const getConversationIdResponse = await axios.get('http://127.0.0.1:8080/llm/chat/conversation-id/root');
+
+      // 保存对话ID
+      conversationId.value = getConversationIdResponse.data.conversation_id;
+
+      // 开始对话
+      chatStarted.value = true;
+    }
+  } catch (error) {
+    console.error('后端接口未开放，使用模拟数据:', error);
+
+    // 使用模拟数据
+    ElMessage({
+      message: '使用模拟数据模式：已开始新对话',
+      type: 'info',
+      duration: 3000
+    });
+
+    // 设置模拟的对话ID
+    conversationId.value = 'mock_conversation_' + Date.now();
+
+    // 开始对话
+    chatStarted.value = true;
+  }
+};
 </script>
-
-
 
 <style scoped>
 /* 顶部样式 */
@@ -63,11 +116,12 @@ import Select from '@/components/Quality_audit/Select_project/Select_project.vue
 
 /* 下拉框背景 */
 .select-container {
+  position: relative;
   height: 50px;
-  padding: 15px;
+  padding: 15px 15px 15px 30px;
   background-color: #f9f9f9;
   border-radius: 10px;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
 /* 聊天窗口背景 */
@@ -79,4 +133,11 @@ import Select from '@/components/Quality_audit/Select_project/Select_project.vue
   position: relative;
 }
 
+/* 开始对话按钮容器 */
+.start-button-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
 </style>

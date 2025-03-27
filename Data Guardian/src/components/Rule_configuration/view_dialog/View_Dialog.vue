@@ -1,10 +1,5 @@
 <template>
-  <el-dialog
-    v-model="visible"
-    width="600px"
-    :show-close="true"
-    class="custom-dialog"
-  >
+  <el-dialog v-model="visible" width="600px" :show-close="true" class="custom-dialog">
     <!-- 自定义 header 插槽 -->
     <template #title>
       <div class="dialog-header">
@@ -14,7 +9,6 @@
 
     <!-- 弹窗主体内容 -->
     <div class="dialog-body">
-
       <!-- 序号和项目名称放在同一行 -->
       <el-row class="field-row" :gutter="16">
         <el-col :span="12">
@@ -26,7 +20,6 @@
           <div class="field-content">{{ projectname }}</div>
         </el-col>
       </el-row>
-
 
       <!-- 错误类型和问题详情放在同一行 -->
       <el-row class="field-row" :gutter="16">
@@ -71,69 +64,71 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineExpose } from "vue";
-import axios from "axios";
+import { ref, defineExpose } from 'vue'
+import axios from 'axios'
 
 // 弹窗的可见性控制
-const visible = ref(false);
+const visible = ref(false)
 
 // 存储规则的详细信息
-const idnumber = ref("");
-const projectname = ref("");
-const tableName = ref("");
-const featureName = ref("");
-const errorType = ref("");
-const ruleContent = ref("");
-const createdAt = ref("");
-const updatedAt = ref("");
-const issue_details = ref(""); // 确保定义问题详情变量
+const idnumber = ref('') // 这将存储前端序号
+const dbId = ref('') // 新增变量存储数据库ID
+const projectname = ref('')
+const tableName = ref('')
+const featureName = ref('')
+const errorType = ref('')
+const ruleContent = ref('')
+const createdAt = ref('')
+const updatedAt = ref('')
+const issue_details = ref('')
 
 // 存储规则 ID（从父组件传递过来）
-const ruleId = ref<number | null>(null);
+const ruleId = ref<number | null>(null)
 
-// 打开弹窗并获取数据
-const openDialog = async (id: number) => {
-  ruleId.value = id; // 保存传递过来的 rule_id
-  visible.value = true; // 打开弹窗
+// 打开弹窗并获取数据，接收额外的序号参数
+const openDialog = async (id: number, frontendIndex: number) => {
+  ruleId.value = id // 保存传递过来的 rule_id
+  visible.value = true // 打开弹窗
+  idnumber.value = frontendIndex.toString() // 直接设置前端序号
 
   try {
-    const response = await axios.get(`http://127.0.0.1:8080/rule/manage/${id}`);
+    const response = await axios.get(`http://127.0.0.1:8080/rule/manage/${id}`)
     if (response.data) {
-      const data = response.data;
-      tableName.value = data.table_name;
-      idnumber.value = data.id;
-      projectname.value = data.project_name;
-      featureName.value = data.feature_name;
-      errorType.value = data.error_type;
-      ruleContent.value = data.rule_content;
-      createdAt.value = data.created_at;
-      updatedAt.value = data.updated_at;
-      issue_details.value = data.issue_details; // 从后端获取问题详情
+      const data = response.data
+      tableName.value = data.table_name
+      dbId.value = data.id // 保存数据库ID，如果需要显示
+      projectname.value = data.project_name
+      featureName.value = data.feature_name
+      errorType.value = data.error_type
+      ruleContent.value = data.rule_content
+      createdAt.value = data.created_at
+      updatedAt.value = data.updated_at
+      issue_details.value = data.issue_details
     }
   } catch (error: any) {
     if (error.response?.status === 404) {
-      alert("规则不存在");
+      alert('规则不存在')
     } else if (error.response?.status === 500) {
-      alert("服务器错误，请稍后再试");
+      alert('服务器错误，请稍后再试')
     } else {
-      alert("网络错误，请检查连接");
+      alert('网络错误，请检查连接')
     }
   }
-};
+}
 
 // 关闭弹窗
 const closeDialog = () => {
-  visible.value = false;
-};
+  visible.value = false
+}
 
-// 让父组件能够调用 openDialog() 传入数据
-defineExpose({ openDialog });
+// 让父组件能够调用 openDialog() 传入数据和序号
+defineExpose({ openDialog })
 </script>
 
 <style scoped>
 /* Header 样式 */
 .dialog-header {
-  background-color: #E1ECF9; /* 标题背景色 */
+  background-color: #e1ecf9; /* 标题背景色 */
   border-radius: 4px;
   padding: 10px 16px;
   text-align: center;

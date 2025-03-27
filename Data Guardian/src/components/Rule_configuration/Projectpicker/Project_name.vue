@@ -56,8 +56,9 @@ const projectIndeterminate = ref(false)
 
 // 通过 emit 将选中的项目（project_name）传递给父组件或页面中其他子组件
 const emit = defineEmits<{
-  (e: 'update:project_name', value: string[]): void
+  (e: 'update:selected_project', value: string[]): void
 }>()
+
 
 // 当用户点击下拉框时调用，若尚未加载选项则发起请求获取项目名称
 const handleFocus = async () => {
@@ -113,13 +114,13 @@ const updateCheckAllStatus = () => {
 // 当用户选择项目时调用，同时上报给父组件
 const handleChange = (val: string[]) => {
   updateCheckAllStatus()
-  emit('update:project_name', val)
+  emit('update:selected_project', val)
 }
 
 // 监听 projectValue 的变化，确保更新全选状态及上报最新选中值
 watch(projectValue, (newVal) => {
   updateCheckAllStatus()
-  emit('update:project_name', newVal)
+  emit('update:selected_project', newVal)
 })
 
 // 添加 reset 方法
@@ -128,8 +129,9 @@ const reset = () => {
   projectSearch.value = ''  // 清空搜索框
   projectCheckAll.value = false
   projectIndeterminate.value = false
-  filteredProjectOptions.value = [...projectOptions.value]  // 重置下拉选项
-  emit('update:project_name', [])  // 通知父组件选项已清空
+  projectOptions.value = []  // 清空后端获取的所有选项
+  filteredProjectOptions.value = []  // 清空当前展示的选项
+  emit('update:selected_project', [])  // 通知父组件选项已清空
 }
 
 // 公开 reset 方法，供父组件调用
