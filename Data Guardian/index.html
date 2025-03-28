@@ -1,23 +1,29 @@
 <!doctype html>
 <html lang="">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <title>Data Guardian</title>
     <style>
-      body {
-        margin: 0;
-      }
-      html, body {
-        width: 100vw;
-        height: 100vh;
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-      }
+        body { margin: 0; }
+        html, body { width: 100vw; height: 100vh; margin: 0; padding: 0; overflow: hidden; }
     </style>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+    <script>
+        // 在页面加载之前检查保存的路径
+        (function() {
+            // 统一使用localStorage
+            if (window.location.pathname === '/' || window.location.pathname === '') {
+                const savedPath = localStorage.getItem('currentPath');
+                if (savedPath && savedPath !== '/' && savedPath !== '/首页') {
+                    console.log('[index.html] 初始加载时恢复路径:', savedPath);
+                    // 使用 replace 方法直接替换当前 URL，不产生新的历史记录
+                    window.location.replace(savedPath);
+                }
+            }
+        })();
+    </script>
+</head>
+<body>
+<div id="app"></div>
+<script type="module" src="/src/main.ts"></script>
+</body>
 </html>
