@@ -13,13 +13,13 @@
 
     <el-main>
       <div class="select-container">
-        <Select @project-selected="handleProjectSelected" />
+        <Select @project-selected="handleProjectSelected" :reset-project="resetProject" />
       </div>
       <div class="chat-container">
         <div v-if="!chatStarted" class="start-button-container">
           <el-button type="primary" @click="startChat">开始对话</el-button>
         </div>
-        <Chat v-else :selected-project="currentProject" :conversation-id="conversationId" />
+        <Chat v-else :selected-project="currentProject" :conversation-id="conversationId" @new-chat-started="resetSelectedProject" />
       </div>
     </el-main>
   </el-container>
@@ -35,10 +35,22 @@ import Select from '@/components/Quality_Audit/Select_project.vue';
 const currentProject = ref('');
 const chatStarted = ref(false);
 const conversationId = ref('');
+const resetProject = ref(false);
 
 // Handle project selection from the Select component
 const handleProjectSelected = (project: string) => {
   currentProject.value = project;
+};
+
+// Reset selected project when a new chat is started
+const resetSelectedProject = () => {
+  currentProject.value = '';
+  resetProject.value = true;
+
+  // Reset the flag after a short delay to trigger the watcher in Select component
+  setTimeout(() => {
+    resetProject.value = false;
+  }, 100);
 };
 
 // Start chat
