@@ -44,9 +44,6 @@ const handlePageChange = (newPage: number) => {
 .pagination {
   display: flex;
   justify-content: flex-end;
-<<<<<<< HEAD
   margin-top: 10px;
-=======
->>>>>>> data-guardian-front/alternate
 }
 </style>
