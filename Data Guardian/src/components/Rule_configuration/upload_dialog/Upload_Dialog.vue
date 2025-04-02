@@ -49,6 +49,7 @@ import { ref, defineExpose } from 'vue'
 import { UploadFilled } from '@element-plus/icons-vue'
 import axios from 'axios'
 import { ElMessage, ElNotification } from 'element-plus'
+import request from '@/utils/request'
 
 // 定义后端响应数据结构
 interface UploadResponse {
@@ -57,11 +58,11 @@ interface UploadResponse {
   total_records: number
   success_count: number
   error_count: number
-  error_details?: { '行号': number; '错误': string }[]
+  error_details?: { 行号: number; 错误: string }[]
 }
 
 const visible = ref(false)
-const uploadUrl = 'http://127.0.0.1:8080/rule/upload/'
+const uploadUrl = '/rule/upload/'
 const uploadHeaders = { Authorization: 'Bearer your_token' }
 const errorDetails = ref<{ row: number; error: string }[]>([])
 
@@ -73,7 +74,7 @@ defineExpose({ openDialog })
 // 下载模板文件
 const downloadTemplate = async () => {
   try {
-    const response = await axios.get('http://127.0.0.1:8080/rule/upload', {
+    const response = await request.get('/rule/upload', {
       responseType: 'blob',
     })
     const url = window.URL.createObjectURL(new Blob([response.data]))

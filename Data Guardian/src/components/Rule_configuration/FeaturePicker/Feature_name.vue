@@ -39,6 +39,7 @@
 <script lang="ts" setup>
 import { ref, watch, computed } from 'vue'
 import axios from 'axios'
+import request from '@/utils/request'
 
 // 接收父组件传入的 selected_project 与 selected_table 参数
 const props = defineProps<{ selected_project: string[]; selected_table: string[] }>()
@@ -113,7 +114,7 @@ const handleFocus = async () => {
       }, params)
     }
 
-    const response = await axios.get('http://127.0.0.1:8080/rule/search/feature', {
+    const response = await request.get('/rule/search/feature', {
       params,
       paramsSerializer: (params) => {
         // 自定义参数序列化逻辑

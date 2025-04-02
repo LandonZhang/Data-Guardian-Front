@@ -19,82 +19,88 @@
         <div v-if="!chatStarted" class="start-button-container">
           <el-button type="primary" @click="startChat">开始对话</el-button>
         </div>
-        <Chat v-else :selected-project="currentProject" :conversation-id="conversationId" @new-chat-started="resetSelectedProject" />
+        <Chat
+          v-else
+          :selected-project="currentProject"
+          :conversation-id="conversationId"
+          @new-chat-started="resetSelectedProject"
+        />
       </div>
     </el-main>
   </el-container>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import axios from 'axios';
-import { ElMessage } from 'element-plus';
-import Chat from '@/components/Quality_Audit/Chat_window.vue';
-import Select from '@/components/Quality_Audit/Select_project.vue';
+import { ref } from 'vue'
+import axios from 'axios'
+import { ElMessage } from 'element-plus'
+import Chat from '@/components/Quality_Audit/Chat_window.vue'
+import Select from '@/components/Quality_Audit/Select_project.vue'
+import request from '@/utils/request'
 
-const currentProject = ref('');
-const chatStarted = ref(false);
-const conversationId = ref('');
-const resetProject = ref(false);
+const currentProject = ref('')
+const chatStarted = ref(false)
+const conversationId = ref('')
+const resetProject = ref(false)
 
 // Handle project selection from the Select component
 const handleProjectSelected = (project: string) => {
-  currentProject.value = project;
-};
+  currentProject.value = project
+}
 
 // Reset selected project when a new chat is started
 const resetSelectedProject = () => {
-  currentProject.value = '';
-  resetProject.value = true;
+  currentProject.value = ''
+  resetProject.value = true
 
   // Reset the flag after a short delay to trigger the watcher in Select component
   setTimeout(() => {
-    resetProject.value = false;
-  }, 100);
-};
+    resetProject.value = false
+  }, 100)
+}
 
 // Start chat
 const startChat = async () => {
   try {
     // 尝试调用后端接口
-    const newConversationResponse = await axios.post('http://127.0.0.1:8080/llm/chat/new-conversation', {
-      user: 'root'
-    });
+    const newConversationResponse = await request.post('/llm/chat/new-conversation', {
+      user: 'root',
+    })
 
     if (newConversationResponse.data.status === 'success') {
       // 显示成功消息
       ElMessage({
         message: newConversationResponse.data.message,
         type: 'success',
-        duration: 3000
-      });
+        duration: 3000,
+      })
 
       // 获取对话ID
-      const getConversationIdResponse = await axios.get('http://127.0.0.1:8080/llm/chat/conversation-id/root');
+      const getConversationIdResponse = await request.get('/llm/chat/conversation-id/root')
 
       // 保存对话ID
-      conversationId.value = getConversationIdResponse.data.conversation_id;
+      conversationId.value = getConversationIdResponse.data.conversation_id
 
       // 开始对话
-      chatStarted.value = true;
+      chatStarted.value = true
     }
   } catch (error) {
-    console.error('后端接口未开放，使用模拟数据:', error);
+    console.error('后端接口未开放，使用模拟数据:', error)
 
     // 使用模拟数据
     ElMessage({
       message: '使用模拟数据模式：已开始新对话',
       type: 'info',
-      duration: 3000
-    });
+      duration: 3000,
+    })
 
     // 设置模拟的对话ID
-    conversationId.value = 'mock_conversation_' + Date.now();
+    conversationId.value = 'mock_conversation_' + Date.now()
 
     // 开始对话
-    chatStarted.value = true;
+    chatStarted.value = true
   }
-};
+}
 </script>
 
 <style scoped>

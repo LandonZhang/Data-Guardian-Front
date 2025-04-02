@@ -4,6 +4,7 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import NewChat from '@/components/Quality_Audit/New_chat_button.vue'
 import RequirementDialog from '@/components/Quality_Audit/Requirement_dialog.vue'
+import request from '@/utils/request'
 
 interface Message {
   text: string
@@ -125,7 +126,7 @@ async function sendMessage() {
 
       // 向后端发送固定请求
       try {
-        const response = await axios.post('http://127.0.0.1:8080/llm/chat', {
+        const response = await request.post('/llm/chat', {
           query: '数据稽核开始',
           user: 'root',
         })
@@ -180,7 +181,7 @@ async function sendMessage() {
 
     try {
       // 向后端发送请求
-      const response = await axios.post('http://127.0.0.1:8080/llm/chat', {
+      const response = await request.post('/llm/chat', {
         query: queryWithProject,
         user: 'root',
       })
@@ -331,7 +332,7 @@ function formatMessage(message) {
 async function startNewConversation() {
   try {
     // 发送请求创建新对话
-    const response = await axios.post('http://127.0.0.1:8080/llm/chat/new-conversation', {
+    const response = await request.post('/llm/chat/new-conversation', {
       user: 'root',
     })
 

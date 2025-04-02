@@ -65,7 +65,7 @@
 
 <script setup lang="ts">
 import { ref, defineExpose } from 'vue'
-import axios from 'axios'
+import request from '@/utils/request'
 
 // 弹窗的可见性控制
 const visible = ref(false)
@@ -92,7 +92,7 @@ const openDialog = async (id: number, frontendIndex: number) => {
   idnumber.value = frontendIndex.toString() // 直接设置前端序号
 
   try {
-    const response = await axios.get(`http://127.0.0.1:8080/rule/manage/${id}`)
+    const response = await request.get(`/rule/manage/${id}`)
     if (response.data) {
       const data = response.data
       tableName.value = data.table_name
@@ -105,13 +105,17 @@ const openDialog = async (id: number, frontendIndex: number) => {
       updatedAt.value = data.updated_at
       issue_details.value = data.issue_details
     }
-  } catch (error: any) {
-    if (error.response?.status === 404) {
-      alert('规则不存在')
-    } else if (error.response?.status === 500) {
-      alert('服务器错误，请稍后再试')
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 404) {
+        alert('规则不存在')
+      } else if (error.response?.status === 500) {
+        alert('服务器错误，请稍后再试')
+      } else {
+        alert('网络错误，请检查连接')
+      }
     } else {
-      alert('网络错误，请检查连接')
+      alert('服务器错误，请稍后再试')
     }
   }
 }

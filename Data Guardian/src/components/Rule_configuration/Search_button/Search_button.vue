@@ -6,6 +6,7 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { watch } from 'vue'
+import request from '@/utils/request'
 
 // 定义响应数据中每条规则的结构
 interface RuleData {
@@ -96,7 +97,7 @@ async function searchRules() {
   }
 
   try {
-    const response = await axios.get('http://127.0.0.1:8080/rule/search/', {
+    const response = await request.get('/rule/search/', {
       params,
       paramsSerializer: (params) => {
         // 自定义参数序列化逻辑

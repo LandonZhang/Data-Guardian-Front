@@ -68,7 +68,7 @@
 import { ref, reactive, defineExpose } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-
+import request from '@/utils/request'
 const visible = ref(false)
 const ruleId = ref<number | null>(null)
 const editedData = reactive({
@@ -89,7 +89,7 @@ const openDialog = async (id: number, frontendIndex: number) => {
   editedData.id = frontendIndex.toString() // 设置前端序号显示
 
   try {
-    const response = await axios.get(`http://127.0.0.1:8080/rule/manage/${id}`)
+    const response = await request.get(`/rule/manage/${id}`)
     if (response.data) {
       const data = response.data
       editedData.dbId = data.id // 保存数据库ID
@@ -120,7 +120,7 @@ const saveAndUpload = async () => {
   if (ruleId.value === null) return
 
   try {
-    const response = await axios.put(`http://127.0.0.1:8080/rule/manage/${ruleId.value}`, {
+    const response = await request.put(`/rule/manage/${ruleId.value}`, {
       project_name: editedData.project_name,
       table_name: editedData.table_name,
       feature_name: editedData.feature_name,

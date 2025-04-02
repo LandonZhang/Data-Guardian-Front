@@ -134,6 +134,7 @@ import FormEditDialog from '@/components/Rule_configuration/edit_dialog/Edit_Dia
 import FormDialog from '@/components/Rule_configuration/view_dialog/View_Dialog.vue'
 import DeleteDialog from '@/components/Rule_configuration/delete_dialog/Delete_Dialog.vue'
 import UploadFileDialog from '@/components/Rule_configuration/upload_dialog/Upload_Dialog.vue'
+import request from '@/utils/request'
 
 interface RuleData {
   id: number
@@ -181,7 +182,7 @@ const handleFeatureNameUpdate = (newFeatureNames: string[]) => {
 // 获取规则数据
 const fetchRules = async (page: number) => {
   try {
-    const response = await axios.get('http://127.0.0.1:8080/rule/search/reset', {
+    const response = await request.get('/rule/search/reset', {
       params: { page, page_size: pageSize },
     })
     total.value = response.data.total

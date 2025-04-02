@@ -1,9 +1,5 @@
 <template>
-  <el-dialog
-    v-model="visible"
-    width="600px"
-    :show-close="true"
-  >
+  <el-dialog v-model="visible" width="600px" :show-close="true">
     <!-- 自定义 header 插槽 -->
     <template #title>
       <div class="custom-header">
@@ -28,56 +24,55 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineExpose } from "vue";
-import axios from "axios";
-import { ElMessage } from "element-plus";
+import { ref, defineExpose } from 'vue'
+import axios from 'axios'
+import { ElMessage } from 'element-plus'
+import request from '@/utils/request'
 
-const visible = ref(false);
-const ruleId = ref<number | null>(null);
-const onDeleteSuccess = ref<(() => void) | null>(null);
+const visible = ref(false)
+const ruleId = ref<number | null>(null)
+const onDeleteSuccess = ref<(() => void) | null>(null)
 
 // 打开弹窗，并接收要删除的规则 ID 和回调函数
 const openDialog = (id: number, callback: () => void) => {
-  ruleId.value = id;
-  onDeleteSuccess.value = callback;
-  visible.value = true;
-};
+  ruleId.value = id
+  onDeleteSuccess.value = callback
+  visible.value = true
+}
 
 // 关闭弹窗
 const closeDialog = () => {
-  visible.value = false;
-};
+  visible.value = false
+}
 
 // 点击“删除”时的操作
 
 const handleDelete = async () => {
-  if (ruleId.value === null) return;
-
+  if (ruleId.value === null) return
 
   try {
-    const response = await axios.delete(`http://127.0.0.1:8080/rule/manage/${ruleId.value}`);
-    if (response.data.status === "success") {
-      ElMessage.success(response.data.message);
-      onDeleteSuccess.value?.();
-      closeDialog();
+    const response = await request.delete(`/rule/manage/${ruleId.value}`)
+    if (response.data.status === 'success') {
+      ElMessage.success(response.data.message)
+      onDeleteSuccess.value?.()
+      closeDialog()
     } else {
-      ElMessage.error("删除失败");
+      ElMessage.error('删除失败')
     }
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 404) {
-        ElMessage.error("规则不存在");
+        ElMessage.error('规则不存在')
       } else {
-        ElMessage.error("服务器内部错误");
+        ElMessage.error('服务器内部错误')
       }
     } else {
-      ElMessage.error("请求失败，请检查网络");
+      ElMessage.error('请求失败，请检查网络')
     }
   }
-};
+}
 
-
-defineExpose({ openDialog });
+defineExpose({ openDialog })
 </script>
 
 <style scoped>
